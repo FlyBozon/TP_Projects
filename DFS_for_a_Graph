@@ -1,0 +1,250 @@
+#include <iostream>
+#include <vector>
+#include <stack>
+#include <thread>
+#include <future>
+#include <sstream>
+
+class Graph {
+public:
+    Graph(std::vector<std::vector<int>> adjList)
+        : adjList(adjList) {}
+
+    void addVertex(const std::vector<int>& newNeighbors) {
+        if (newNeighbors.size() > adjList.size() - 1) {
+            std::cout << "Error: The number of neighbors is greater than the number of vertices." << std::endl;
+            return;
+        }
+        adjList.push_back(newNeighbors);
+        std::cout << "Added vertex " << adjList.size() - 1 << std::endl;
+
+        // Add the new vertex to the neighbor lists of its neighbors
+        for (int neighbor : newNeighbors) {
+            adjList[neighbor].push_back(adjList.size() - 1);
+        }
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // ignore any remaining input from the input stream
+        std::cout << "Neighbors added to vertex " << adjList.size() - 1 << std::endl;
+    }
+
+    void modifyVertex() {
+        int ChVertex, neighbour, choice;
+        bool already_is = false;
+        std::cout << "Which vertex? (from the number 0)\n";
+        std::cout << "Last vertex has number: " << adjList.size() - 1 << "\n";
+        do
+            std::cin >> ChVertex;
+        while (ChVertex > adjList.size());
+        std::cout << "1)Add neighbour\n 2)Delete neighbour\n";
+        std::cin >> choice;
+        if (choice == 1)
+        {
+            std::cout << "What do you want to add?\n Last vertex has number: " << adjList.size() - 1 << "\n";
+            do {
+                std::cin >> neighbour;
+                if (neighbour > adjList.size())
+                    std::cout << "There are not that many vertices!\n";
+            } while (neighbour > adjList.size());
+            for (int y : adjList[ChVertex]) {
+                if (y == neighbour)
+                    already_is = true;
+            }
+            if (already_is == false) {
+                adjList[ChVertex].push_back(neighbour);
+                adjList[neighbour].push_back(ChVertex);
+            }
+            else
+            {
+                std::cout << "They are already neighbours\n";
+            }
+        }
+
+
+        if (choice == 2)
+        {
+
+            std::cout << "What do you want to delete?\n";
+            std::cout << "Availible vertices: ";
+            for (int availible : adjList[ChVertex])
+                std::cout << availible << " ";
+            std::cout << std::endl;
+
+            do
+                std::cin >> neighbour;
+            while (neighbour > adjList.size());
+
+            int counter = 0;
+
+            for (int x : adjList[ChVertex])
+            {
+                if (x == neighbour)
+                    break;
+                counter++;
+            }
+
+            if (counter < adjList.size() - 1) {
+                adjList[ChVertex].erase(adjList[ChVertex].begin() + counter);
+
+                counter = 0;
+
+                for (int x : adjList[neighbour])
+                {
+                    if (x == ChVertex)
+                        break;
+                    counter++;
+                }
+
+                if (counter < adjList.size() - 1)
+                    adjList[neighbour].erase(adjList[neighbour].begin() + counter);
+            }
+            else
+                std::cout << "There isn't neighbour like this\n";
+
+
+
+        }
+    }
+
+    void deleteVertex() {
+        int vertexToDelete;
+        std::cout << "Which vertex you want to delete(from 0)\n";
+        std::cout << "Last vertex has number: " << adjList.size() - 1 << "\n";
+        std::cin >> vertexToDelete;
+        int counter;
+        bool found;
+        for (int i = 0; i < adjList.size() - 1; i++)
+        {
+            counter = 0;
+            found = false;
+            for (int idk : adjList[i])
+            {
+                if (idk == vertexToDelete)
+                {
+                    found = true;
+                    break;
+                }
+                counter++;
+            }
+            if (found == true)
+                adjList[i].erase(adjList[i].begin() + counter);
+        }
+
+
+        for (int i = 0; i < adjList.size() - 1; i++)
+        {
+
+            for (int x = 0; x < adjList.size() - 1; x++)
+            {
+                if (vertexToDelete < adjList[i][x])
+                {
+                    adjList[i][x]--;
+                }
+            }
+
+        }
+
+        adjList.erase(adjList.begin() + vertexToDelete);
+
+        std::cout << "Deleted vertex " << vertexToDelete << std::endl;
+    }
+
+    void displayGraph() {
+        std::cout << "Adjacency list:" << std::endl;
+        int vertexIndex = 0;
+        for (auto& neighborList : adjList) {
+            std::cout << vertexIndex++ << ": ";
+            for (auto& neighbor : neighborList) {
+                std::cout << neighbor << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    void dfs() {
+        std::stack<int> stack;
+        std::vector<bool> visited(adjList.size(), false);
+
+        // Starting vertex
+        stack.push(0);
+        visited[0] = true;
+        std::cout << stack.top() << " ";
+
+        while (!stack.empty()) {
+            int vertex = stack.top();
+            stack.pop();
+            if (visited[vertex] != true)
+            {
+                std::cout << vertex << " ";
+                visited[vertex] = true;
+            }
+            for (int neighbor : adjList[vertex]) {
+                if (!visited[neighbor]) {
+
+                    stack.push(neighbor);
+                }
+            }
+        }
+        std::cout << std::endl;
+    }
+
+private:
+    std::vector<std::vector<int>> adjList;
+};
+
+int main() {
+    std::vector<std::vector<int>> adjList1 = { {1, 2}, {0, 2}, {0, 1, 3}, {2} };
+    std::vector<std::vector<int>> adjList2 = { {1, 2, 4}, {0, 3, 5}, {0, 6}, {1}, {0, 5}, {1, 4}, {2} };
+
+    // Create tasks for each graph
+    std::packaged_task<void()> task1([&]() {
+        Graph graph(adjList1);
+        while (true) {
+            std::cout << "Press\n 1 to delete vertex, \n2 to add vertex,\n3 to add neighbour to existing vertex, \n4 to display graph, \n5 Exit, \nor any other key to run DFS: ";
+            int choice;
+            std::cin >> choice;
+
+            if (choice == 1) {
+                graph.deleteVertex();
+            }
+            else if (choice == 2) {
+                std::vector<int> newNeighbors;
+                std::cout << "Enter the neighbors of the new vertex separated by spaces (press ENTER to finish): ";
+                std::cin.ignore(); // ignore the newline character left in the input stream
+                std::string input;
+                std::getline(std::cin, input);
+                std::stringstream ss(input);
+                int neighbor;
+                while (ss >> neighbor) {
+                    newNeighbors.push_back(neighbor);
+                }
+
+                if (input.empty()) {
+                    std::cout << "No neighbors added." << std::endl;
+                }
+                else {
+                    graph.addVertex(newNeighbors);
+                    std::cout << "Added " << newNeighbors.size() << " neighbors to vertex " << adjList1.size() - 1 << std::endl;
+                }
+            }
+            else if (choice == 3) {
+                graph.modifyVertex();
+            }
+            else if (choice == 4) {
+                graph.displayGraph();
+            }
+            else if (choice == 5)
+                return 0;
+            else {
+                graph.dfs();
+            }
+        }
+        });
+    std::future<void> future1 = task1.get_future();
+
+    // Start threads for each task
+    std::thread thread1(std::move(task1));
+
+    // Wait for threads to finish
+    future1.get();
+    thread1.join();
+    return 0;
+}
